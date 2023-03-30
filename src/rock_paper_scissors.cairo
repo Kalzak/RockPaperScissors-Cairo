@@ -7,12 +7,6 @@ mod RPS {
     use traits::TryInto;
     use option::OptionTrait;
 
-    enum GameState {
-        JOINING: (),
-        SUBMITTING: (),
-        REVEALING: (),
-    }
-    
     struct Storage {
         state: felt252, // 0=JOINING, 1=SUBMITTING, 2=REVEALING
         player_one: ContractAddress,
@@ -29,8 +23,18 @@ mod RPS {
     #[event]
     fn PlayerTwoWins(winner: ContractAddress, winner_move: felt252, losing_move: felt252) {}
 
-    #[draw]
+    #[event]
     fn Draw(draw_move: felt252) {}
+
+    #[view]
+    fn get_player_one() -> ContractAddress {
+        player_one::read()
+    }
+
+    #[view]
+    fn get_player_two() -> ContractAddress {
+        player_two::read()
+    }
     
     #[external]
     fn join() {
