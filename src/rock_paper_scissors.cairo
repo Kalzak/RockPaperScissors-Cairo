@@ -4,7 +4,9 @@ mod RPS {
     use starknet::get_caller_address;
     use starknet::contract_address_const;
     use starknet::ContractAddress;
+    use starknet::ContractAddressIntoFelt252;
     use traits::TryInto;
+    use traits::Into;
     use option::OptionTrait;
 
     struct Storage {
@@ -15,6 +17,7 @@ mod RPS {
         player_two_hashed_move: felt252,
         player_one_move: felt252,
         player_two_move: felt252,
+        previous_winner: ContractAddress,
     }
 
     #[event]
@@ -35,6 +38,32 @@ mod RPS {
     fn get_player_two() -> ContractAddress {
         player_two::read()
     }
+
+    #[view]
+    fn get_game_state() -> felt252 {
+        state::read()
+    }
+
+    fn get_player_one_hashed_move() -> felt252 {
+        player_one_hashed_move::read()
+    }
+
+    #[view]
+    fn get_player_two_hashed_move() -> felt252 {
+        player_two_hashed_move::read()
+    }
+
+    #[view]
+    fn get_previous_winner() -> ContractAddress {
+        previous_winner::read()
+    }
+
+    #[view]
+    fn generate_hashed_move(move: felt252, salt: felt252) -> felt252 {
+        let caller: ContractAddress = get_caller_address();
+        let caller: felt252 = caller.into();
+        pedersen(caller, pedersen(move, salt))
+    }
     
     #[external]
     fn join() {
@@ -42,6 +71,9 @@ mod RPS {
         let _player_one = player_one::read();
         let _player_two = player_two::read();
         let zero_address = contract_address_const::<0>();
+        let _state = state::read();
+
+        assert(_state == 0, '!JOINING');
 
         if _player_one == zero_address {
             player_one::write(caller);
@@ -89,18 +121,23 @@ mod RPS {
         assert(_state == 2, '!REVEALING');
 
         let hashed_move = pedersen(move, salt);
+        let hashed_move = pedersen(caller.into(), hashed_move);
 
         if caller == _player_one {
             let _player_one_hashed_move = player_one_hashed_move::read();
             if _player_one_hashed_move == hashed_move {
                 check_move(move);
                 player_one_move::write(move);
+            } else {
+                assert(0 == 1, 'did not match');
             }
         } else if caller == _player_two {
             let _player_two_hashed_move = player_two_hashed_move::read();
             if _player_two_hashed_move == hashed_move {
                 check_move(move);
                 player_two_move::write(move);
+            } else {
+                assert(0 == 1, 'did not match');
             }
         }
 
@@ -143,10 +180,14 @@ mod RPS {
             if player_one_move_int - 1_u8 == player_two_move_int % 3_u8 {
                 let player_one_address = player_one::read();
                 PlayerOneWins(player_one_address, player_one_move, player_two_move);
+                previous_winner::write(player_one_address);
             } else {
                 let player_two_address = player_two::read();
                 PlayerTwoWins(player_two_address, player_two_move, player_one_move);
+                previous_winner::write(player_two_address);
             }
         }
+
+        state::write(0);
     }
 }
