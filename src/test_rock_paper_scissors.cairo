@@ -58,6 +58,27 @@ fn join_game_starts() {
 
 #[test]
 #[available_gas(2000000)]
+#[should_panic(expected = ('!JOINING', ))]
+fn cannot_join_after_start() {
+    let player_one: felt252 = 123;
+    let player_one: ContractAddress = player_one.try_into().unwrap();
+    let player_two: felt252 = 456;
+    let player_two: ContractAddress = player_two.try_into().unwrap();
+    let player_three: felt252 = 789;
+    let player_three: ContractAddress = player_three.try_into().unwrap();
+
+    set_caller_address(player_one);
+    RPS::join();
+
+    set_caller_address(player_two);
+    RPS::join();
+
+    set_caller_address(player_three);
+    RPS::join();
+}
+
+#[test]
+#[available_gas(2000000)]
 fn can_submit_move() {
     let player_one: felt252 = 123;
     let player_one: ContractAddress = player_one.try_into().unwrap();
@@ -114,6 +135,108 @@ fn can_reveal_move() {
     set_caller_address(player_one);
     let player_one_hashed_move = RPS::generate_hashed_move(player_one_move, player_one_salt); 
     let player_two_move = 2;
+    let player_two_salt = 67890;
+    set_caller_address(player_two);
+    let player_two_hashed_move = RPS::generate_hashed_move(player_two_move, player_two_salt); 
+
+    set_caller_address(player_one);
+    RPS::submit(player_one_hashed_move);
+    set_caller_address(player_two);
+    RPS::submit(player_two_hashed_move);
+
+    set_caller_address(player_one);
+    RPS::reveal(player_one_move, player_one_salt);
+    set_caller_address(player_two);
+    RPS::reveal(player_two_move, player_two_salt);
+
+    let state = RPS::get_game_state();
+    assert(state == 0, 'game did not finish');
+
+    let winner = RPS::get_previous_winner();
+    assert(winner == player_two, 'winner mistake');
+}
+
+#[test]
+#[available_gas(2000000)]
+#[should_panic(expected = ('invalid move', ))]
+fn cannot_reveal_invalid_move() {
+    let player_one: felt252 = 123;
+    let player_one: ContractAddress = player_one.try_into().unwrap();
+    let player_two: felt252 = 456;
+    let player_two: ContractAddress = player_two.try_into().unwrap();
+
+    set_caller_address(player_one);
+    RPS::join();
+    set_caller_address(player_two);
+    RPS::join();
+
+    let player_one_move = 1;
+    let player_one_salt = 12345;
+    set_caller_address(player_one);
+    let player_one_hashed_move = RPS::generate_hashed_move(player_one_move, player_one_salt); 
+    let player_two_move = 6;
+    let player_two_salt = 67890;
+    set_caller_address(player_two);
+    let player_two_hashed_move = RPS::generate_hashed_move(player_two_move, player_two_salt); 
+
+    set_caller_address(player_one);
+    RPS::submit(player_one_hashed_move);
+    set_caller_address(player_two);
+    RPS::submit(player_two_hashed_move);
+
+    set_caller_address(player_one);
+    RPS::reveal(player_one_move, player_one_salt);
+    set_caller_address(player_two);
+    RPS::reveal(player_two_move, player_two_salt);
+}
+
+#[test]
+#[available_gas(4000000)]
+fn can_start_new_game_after_reveal() {
+    let player_one: felt252 = 123;
+    let player_one: ContractAddress = player_one.try_into().unwrap();
+    let player_two: felt252 = 456;
+    let player_two: ContractAddress = player_two.try_into().unwrap();
+
+    set_caller_address(player_one);
+    RPS::join();
+    set_caller_address(player_two);
+    RPS::join();
+
+    let player_one_move = 1;
+    let player_one_salt = 12345;
+    set_caller_address(player_one);
+    let player_one_hashed_move = RPS::generate_hashed_move(player_one_move, player_one_salt); 
+    let player_two_move = 2;
+    let player_two_salt = 67890;
+    set_caller_address(player_two);
+    let player_two_hashed_move = RPS::generate_hashed_move(player_two_move, player_two_salt); 
+
+    set_caller_address(player_one);
+    RPS::submit(player_one_hashed_move);
+    set_caller_address(player_two);
+    RPS::submit(player_two_hashed_move);
+
+    set_caller_address(player_one);
+    RPS::reveal(player_one_move, player_one_salt);
+    set_caller_address(player_two);
+    RPS::reveal(player_two_move, player_two_salt);
+
+    let player_one: felt252 = 321;
+    let player_one: ContractAddress = player_one.try_into().unwrap();
+    let player_two: felt252 = 654;
+    let player_two: ContractAddress = player_two.try_into().unwrap();
+
+    set_caller_address(player_one);
+    RPS::join();
+    set_caller_address(player_two);
+    RPS::join();
+
+    let player_one_move = 2;
+    let player_one_salt = 12345;
+    set_caller_address(player_one);
+    let player_one_hashed_move = RPS::generate_hashed_move(player_one_move, player_one_salt); 
+    let player_two_move = 3;
     let player_two_salt = 67890;
     set_caller_address(player_two);
     let player_two_hashed_move = RPS::generate_hashed_move(player_two_move, player_two_salt); 
