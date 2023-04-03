@@ -381,6 +381,68 @@ fn can_claim_abandoned_reveal() {
     RPS::claim_abandoned();
 }
 
+#[test]
+#[available_gas(4000000)]
+fn can_start_new_match_after_abandon() {
+    let player_one: felt252 = 123;
+    let player_one: ContractAddress = player_one.try_into().unwrap();
+    let player_two: felt252 = 456;
+    let player_two: ContractAddress = player_two.try_into().unwrap();
+
+    set_caller_address(player_one);
+    RPS::join();
+    set_caller_address(player_two);
+    RPS::join();
+
+    let player_one_move = 1;
+    let player_one_salt = 12345;
+    set_caller_address(player_one);
+    let player_one_hashed_move = RPS::generate_hashed_move(player_one_move, player_one_salt); 
+
+    set_caller_address(player_one);
+    RPS::submit(player_one_hashed_move);
+
+    set_block_timestamp(get_timestamp() + 5000_u64);
+    
+    set_caller_address(player_one);
+    RPS::claim_abandoned();
+
+    let player_one: felt252 = 123;
+    let player_one: ContractAddress = player_one.try_into().unwrap();
+    let player_two: felt252 = 456;
+    let player_two: ContractAddress = player_two.try_into().unwrap();
+
+    set_caller_address(player_one);
+    RPS::join();
+    set_caller_address(player_two);
+    RPS::join();
+
+    let player_one_move = 1;
+    let player_one_salt = 12345;
+    set_caller_address(player_one);
+    let player_one_hashed_move = RPS::generate_hashed_move(player_one_move, player_one_salt); 
+    let player_two_move = 2;
+    let player_two_salt = 67890;
+    set_caller_address(player_two);
+    let player_two_hashed_move = RPS::generate_hashed_move(player_two_move, player_two_salt); 
+
+    set_caller_address(player_one);
+    RPS::submit(player_one_hashed_move);
+    set_caller_address(player_two);
+    RPS::submit(player_two_hashed_move);
+
+    set_caller_address(player_one);
+    RPS::reveal(player_one_move, player_one_salt);
+    set_caller_address(player_two);
+    RPS::reveal(player_two_move, player_two_salt);
+
+    let state = RPS::get_game_state();
+    assert(state == 0, 'game did not finish');
+
+    let winner = RPS::get_previous_winner();
+    assert(winner == player_two, 'winner mistake');
+}
+
 fn get_timestamp() -> u64 {
     get_block_info().unbox().block_timestamp
 }

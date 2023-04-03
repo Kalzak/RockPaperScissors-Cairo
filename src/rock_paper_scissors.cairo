@@ -17,8 +17,8 @@ mod RPS {
         player_two: ContractAddress,
         player_one_hashed_move: felt252,
         player_two_hashed_move: felt252,
-        player_one_move: felt252,
-        player_two_move: felt252,
+        player_one_move: felt252, // 1=ROCK, 2=PAPER, 3=SCISSORS
+        player_two_move: felt252, // 1=ROCK, 2=PAPER, 3=SCISSORS
         player_one_interacted: bool,
         player_two_interacted: bool,
         interaction_time_limit: u64,
@@ -39,7 +39,7 @@ mod RPS {
     fn Draw(draw_move: felt252) {}
 
     //////////////////////////////////////////
-    // GETTERS
+    // VIEW FUNCTIONS
     //////////////////////////////////////////
 
     #[view]
@@ -79,7 +79,7 @@ mod RPS {
     }
     
     //////////////////////////////////////////
-    // EXTERNAL
+    // EXTERNAL FUNCTIONS
     //////////////////////////////////////////
 
     #[external]
@@ -178,10 +178,12 @@ mod RPS {
         } else if _player_two_interacted { 
             PlayerTwoWins(player_one::read(), 0, 0);
         }
+
+        reset();
     }
 
     //////////////////////////////////////////
-    // INTERNAL
+    // INTERNAL FUNCTIONS
     //////////////////////////////////////////
 
     fn caller_is_player(caller: ContractAddress, _player_one: ContractAddress, _player_two: ContractAddress) {
@@ -240,8 +242,12 @@ mod RPS {
         player_two_hashed_move::write(0);
         player_one_move::write(0);
         player_two_move::write(0);
+        reset_interactions();
+        interaction_time_limit::write(0_u64);
+    }
+
+    fn reset_interactions() {
         player_one_interacted::write(false);
         player_two_interacted::write(false);
-        interaction_time_limit::write(0_u64)
-    }
+    }   
 }
