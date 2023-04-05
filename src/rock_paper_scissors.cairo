@@ -201,11 +201,9 @@ mod RPS {
 
         if move == 1 {
             valid = true;
-        }
-        if move == 2 {
+        } else if move == 2 {
             valid = true;
-        }
-        if move == 3 {
+        } else if move == 3 {
             valid = true;
         }
 
